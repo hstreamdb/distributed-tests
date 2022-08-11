@@ -1,16 +1,13 @@
 package io.hstream.distributed.testing;
 
-import static io.hstream.distributed.testing.TestUtils.HServerCliOpts;
-import static io.hstream.distributed.testing.TestUtils.bootstrapHServerCluster;
+import static io.hstream.distributed.testing.TestUtils.*;
 
-import io.hstream.HStreamClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -21,7 +18,6 @@ import org.testcontainers.containers.GenericContainer;
 public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
 
   static final int CLUSTER_SIZE = 3;
-
   private static final AtomicInteger count = new AtomicInteger(0);
   private static final Logger logger = LoggerFactory.getLogger(ClusterExtension.class);
   private final List<GenericContainer<?>> hServers = new ArrayList<>(CLUSTER_SIZE);
@@ -34,34 +30,32 @@ public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
   private String grp;
   private long beginTime;
 
-  private HStreamClient client;
-
-  public ClusterExtension() {
-  }
-
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
     beginTime = System.currentTimeMillis();
+
     grp = UUID.randomUUID().toString();
-    TestUtils.printBeginFlag(context);
+    printBeginFlag(context);
 
     dataDir = Files.createTempDirectory("hstream");
 
-    String zkHost = "127.0.0.1";
-    zk = TestUtils.makeZooKeeper();
+    zk = makeZooKeeper();
     zk.start();
+    String zkHost = "127.0.0.1";
     logger.debug("zkHost: " + zkHost);
 
-    hstore = TestUtils.makeHStore(dataDir);
+    hstore = makeHStore(dataDir);
     hstore.start();
+    String hstoreHost = "127.0.0.1";
+    logger.debug("hstoreHost: " + hstoreHost);
 
     String hServerAddress = "127.0.0.1";
-    List<HServerCliOpts> hserverConfs = new ArrayList<HServerCliOpts>(CLUSTER_SIZE);
+    List<TestUtils.HServerCliOpts> hserverConfs = new ArrayList<>(CLUSTER_SIZE);
     for (int i = 0; i < CLUSTER_SIZE; ++i) {
       int offset = count.incrementAndGet();
-      int hServerPort = 1234 + offset;
-      int hServerInnerPort = 6500 + offset;
-      HServerCliOpts options = new HServerCliOpts();
+      int hServerPort = 6570 + offset;
+      int hServerInnerPort = 65000 + offset;
+      TestUtils.HServerCliOpts options = new TestUtils.HServerCliOpts();
       options.serverId = offset;
       options.port = hServerPort;
       options.internalPort = hServerInnerPort;
@@ -73,52 +67,58 @@ public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
     }
     seedNodes = hServerInnerUrls.stream().reduce((url1, url2) -> url1 + "," + url2).get();
     hServers.addAll(bootstrapHServerCluster(hserverConfs, seedNodes, dataDir));
+    hServers.forEach(h -> logger.info(h.getLogs()));
     Thread.sleep(3000);
 
     Object testInstance = context.getRequiredTestInstance();
+    var initUrl = hServerUrls.stream().reduce((url1, url2) -> url1 + "," + url2).get();
 
-    TestUtils.silence(
+    silence(
+        () ->
+            testInstance
+                .getClass()
+                .getMethod("setHStreamDBUrl", String.class)
+                .invoke(testInstance, initUrl));
+
+    silence(
         () ->
             testInstance
                 .getClass()
                 .getMethod("setCount", AtomicInteger.class)
                 .invoke(testInstance, count));
-    TestUtils.silence(
+    silence(
+        () ->
+            testInstance
+                .getClass()
+                .getMethod("setSeedNodes", String.class)
+                .invoke(testInstance, seedNodes));
+    silence(
         () ->
             testInstance
                 .getClass()
                 .getMethod("setDataDir", Path.class)
                 .invoke(testInstance, dataDir));
-
-    TestUtils.silence(
+    silence(
         () ->
             testInstance
                 .getClass()
                 .getMethod("setHServers", List.class)
                 .invoke(testInstance, hServers));
-
-    TestUtils.silence(
+    silence(
         () ->
             testInstance
                 .getClass()
                 .getMethod("setHServerUrls", List.class)
                 .invoke(testInstance, hServerUrls));
 
-    TestUtils.silence(
-        () ->
-            testInstance
-                .getClass()
-                .getMethod("setSeedNodes", String.class)
-                .invoke(testInstance, seedNodes));
-
-    TestUtils.silence(
+    silence(
         () ->
             testInstance
                 .getClass()
                 .getMethod("setLogMsgPathPrefix", String.class)
                 .invoke(testInstance, grp));
 
-    TestUtils.silence(
+    silence(
         () ->
             testInstance
                 .getClass()
@@ -133,21 +133,20 @@ public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
     // waiting for servers to flush logs
     for (int i = 0; i < hServers.size(); i++) {
       var hServer = hServers.get(i);
-      TestUtils.writeLog(context, "hserver-" + i, grp, hServer.getLogs());
+      writeLog(context, "hserver-" + i, grp, hServer.getLogs());
       hServer.close();
     }
 
     hServers.clear();
     hServerUrls.clear();
     hServerInnerUrls.clear();
-
-    TestUtils.writeLog(context, "hstore", grp, hstore.getLogs());
+    count.set(0);
+    writeLog(context, "hstore", grp, hstore.getLogs());
     hstore.close();
-    TestUtils.writeLog(context, "zk", grp, zk.getLogs());
+    writeLog(context, "zk", grp, zk.getLogs());
     zk.close();
 
     logger.info("total time is = {}ms", System.currentTimeMillis() - beginTime);
-    TestUtils.printEndFlag(context);
+    printEndFlag(context);
   }
-
 }
