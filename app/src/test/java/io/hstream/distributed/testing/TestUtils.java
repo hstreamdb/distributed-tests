@@ -100,7 +100,7 @@ public class TestUtils {
           + serverId
           + " --zkuri "
           + zkHost
-          + ":2183"
+          + ":2181"
           + " --store-config "
           + "/data/hstore/logdevice.conf "
           + " --store-admin-port "
