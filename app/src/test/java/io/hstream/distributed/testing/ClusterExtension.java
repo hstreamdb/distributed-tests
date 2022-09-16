@@ -148,6 +148,8 @@ public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
     hstore.close();
     writeLog(context, "zk", grp, zk.getLogs());
     zk.close();
+    rq.close();
+
 
     logger.info("total time is = {}ms", System.currentTimeMillis() - beginTime);
     printEndFlag(context);
