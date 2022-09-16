@@ -103,7 +103,7 @@ public class TestUtils {
           + " --server-id "
           + serverId
           + " --meta-store "
-          + " 'rquri:\"127.0.0.1:4001\"'"
+          + " rq://127.0.0.1:4001"
           + " --store-config "
           + "/data/hstore/logdevice.conf "
           + " --store-admin-port "
