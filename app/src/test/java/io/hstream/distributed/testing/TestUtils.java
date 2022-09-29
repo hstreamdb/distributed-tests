@@ -102,7 +102,7 @@ public class TestUtils {
           + address
           + " --server-id "
           + serverId
-          + " --meta-store "
+          + " --metastore-uri "
           + " rq://127.0.0.1:4001"
           + " --store-config "
           + "/data/hstore/logdevice.conf "
