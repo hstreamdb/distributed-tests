@@ -1,5 +1,9 @@
 package io.hstream.distributed.testing;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.hstream.internal.HStreamApiGrpc;
 import io.hstream.internal.ServerNode;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -9,6 +13,8 @@ import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
@@ -23,6 +29,18 @@ public class TestUtils {
   private static final Logger logger = LoggerFactory.getLogger(TestUtils.class);
   private static final DockerImageName defaultHStreamImageName =
       DockerImageName.parse("hstreamdb/hstream:latest");
+
+  public static String randText() {
+    return UUID.randomUUID().toString();
+  }
+
+  public static String doGetToString(ListenableFuture<?> resp) {
+    try {
+      return resp.get().toString();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   public static ServerNode optionsToNode(HServerCliOpts options) {
     return ServerNode.newBuilder()
@@ -78,6 +96,31 @@ public class TestUtils {
         .withCommand(
             "bash", "-c", " hstream-server" + hserverConf.toString() + " --seed-nodes " + seedNodes)
         .waitingFor(Wait.forLogMessage(".*Server is started on port.*", 1));
+  }
+
+  public static HStreamApiGrpc.HStreamApiFutureStub newGrpcStub(
+      String url, List<ManagedChannel> channels) {
+    var ss = url.split(":");
+    var channel =
+        ManagedChannelBuilder.forAddress(ss[0], Integer.parseInt(ss[1])).usePlaintext().build();
+    channels.add(channel);
+    return HStreamApiGrpc.newFutureStub(channel);
+  }
+
+  public static HStreamApiGrpc.HStreamApiFutureStub newGrpcStub(
+      String address, int port, List<ManagedChannel> channels) {
+    var channel = ManagedChannelBuilder.forAddress(address, port).usePlaintext().build();
+    channels.add(channel);
+    return HStreamApiGrpc.newFutureStub(channel);
+  }
+
+  public static int getHServerIndex(String url, List<String> hServerUrls) {
+    int index = 0;
+    for (String hServerUrl : hServerUrls) {
+      if (url.equals(hServerUrl)) return index;
+      index++;
+    }
+    return -1;
   }
 
   static class HServerCliOpts {
