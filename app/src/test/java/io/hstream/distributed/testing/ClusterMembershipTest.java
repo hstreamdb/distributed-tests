@@ -3,18 +3,14 @@ package io.hstream.distributed.testing;
 import static io.hstream.distributed.testing.ClusterExtension.CLUSTER_SIZE;
 import static io.hstream.distributed.testing.TestUtils.*;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.hstream.internal.DescribeClusterResponse;
 import io.hstream.internal.HStreamApiGrpc;
 import io.hstream.internal.ServerNode;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
@@ -63,14 +59,6 @@ public class ClusterMembershipTest {
     return getStub(node.getHost() + ":" + node.getPort());
   }
 
-  private String doGetToString(ListenableFuture<DescribeClusterResponse> resp) {
-    try {
-      return resp.get().toString();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private HStreamApiGrpc.HStreamApiFutureStub getStub(String url) {
     for (int i = 0; i < hServerUrls.size(); i++) {
       if (hServerUrls.get(i).equals(url)) {
@@ -83,11 +71,7 @@ public class ClusterMembershipTest {
   @BeforeEach
   public void setup() {
     for (var url : hServerUrls) {
-      var ss = url.split(":");
-      var channel =
-          ManagedChannelBuilder.forAddress(ss[0], Integer.parseInt(ss[1])).usePlaintext().build();
-      channels.add(channel);
-      stubs.add(HStreamApiGrpc.newFutureStub(channel));
+      stubs.add(newGrpcStub(url, channels));
     }
   }
 
@@ -101,7 +85,7 @@ public class ClusterMembershipTest {
   void testClusterBootStrap() throws Exception {
     var req = Empty.newBuilder().build();
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(fs.stream().map(this::doGetToString).collect(Collectors.toList()).toString());
+    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
       Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
     }
@@ -121,9 +105,10 @@ public class ClusterMembershipTest {
             .setHost(options.address)
             .setPort(options.port)
             .build();
+    stubs.add(newGrpcStub(options.address, options.port, channels));
     Thread.sleep(1000);
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(fs.stream().map(this::doGetToString).collect(Collectors.toList()).toString());
+    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
       Assertions.assertEquals(CLUSTER_SIZE + 1, f.get().getServerNodesCount());
       Assertions.assertTrue(f.get().getServerNodesList().contains(newNode));
@@ -149,17 +134,13 @@ public class ClusterMembershipTest {
     newServers.stream().parallel().forEach(GenericContainer::start);
 
     for (var url : newNodesInternalUrls) {
-      var ss = url.split(":");
-      var channel =
-          ManagedChannelBuilder.forAddress(ss[0], Integer.parseInt(ss[1])).usePlaintext().build();
-      channels.add(channel);
-      stubs.add(HStreamApiGrpc.newFutureStub(channel));
+      stubs.add(newGrpcStub(url, channels));
     }
 
     Thread.sleep(3000);
     var req = Empty.newBuilder().build();
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(fs.stream().map(this::doGetToString).collect(Collectors.toList()).toString());
+    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
       Assertions.assertEquals(CLUSTER_SIZE + newNodesNum, f.get().getServerNodesCount());
       Assertions.assertTrue(f.get().getServerNodesList().containsAll(newNodes));
