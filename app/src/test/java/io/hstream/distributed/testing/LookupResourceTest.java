@@ -135,4 +135,36 @@ public class LookupResourceTest {
       Assertions.assertEquals(gs.get(0).get().getServerNode(), g.get().getServerNode());
     }
   }
+
+  @Test
+  @Timeout(60)
+  void LookUpShouldReturnNewResultWithNodeLeavingAndThenJoin() throws Exception {
+    var subscriptionId = randText();
+    var req = LookupSubscriptionRequest.newBuilder().setSubscriptionId(subscriptionId).build();
+    var f = stubs.get(0).lookupSubscription(req);
+    var allocatedNode = f.get().getServerNode();
+    var allocatedUrl = allocatedNode.getHost() + ':' + allocatedNode.getPort();
+    var index = getHServerIndex(allocatedUrl, hServerUrls);
+    Assertions.assertNotEquals(-1, index);
+    var leavingNode = hServers.get(index);
+    logger.info(allocatedNode.toString());
+    leavingNode.close();
+    hServers.remove(index);
+    stubs.remove(index);
+    Thread.sleep(10000);
+
+    var options = makeHServerCliOpts(count);
+    var newServer = makeHServer(options, seedNodes, dataDir);
+    newServer.start();
+    var newStub = newGrpcStub(options.address, options.port, channels);
+    stubs.add(newStub);
+    var gg = newStub.lookupSubscription(req);
+    Assertions.assertNotEquals(allocatedNode, gg.get().getServerNode());
+
+    var gs = stubs.stream().map(s -> s.lookupSubscription(req)).collect(Collectors.toList());
+    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    for (var g : gs) {
+      Assertions.assertEquals(gg.get().getServerNode(), g.get().getServerNode());
+    }
+  }
 }
