@@ -93,6 +93,51 @@ public class ClusterMembershipTest {
 
   @Test
   @Timeout(60)
+  void testRestartOneSeed() throws Exception {
+    var rand = new Random();
+    var index = rand.nextInt(CLUSTER_SIZE - 1);
+    var restartingNode = hServers.get(index);
+    var req = Empty.newBuilder().build();
+    var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    for (var f : fs) {
+      Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
+    }
+    restart(restartingNode);
+    Thread.sleep(1000);
+    var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    for (var g : gs) {
+      Assertions.assertEquals(CLUSTER_SIZE, g.get().getServerNodesCount());
+    }
+  }
+
+  @Test
+  @Timeout(60)
+  void testRestartMoreSeeds() throws Exception {
+    var rand = new Random();
+    var index = rand.nextInt(CLUSTER_SIZE - 1);
+    var req = Empty.newBuilder().build();
+    var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    for (var f : fs) {
+      Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
+    }
+    int i = 0;
+    for (GenericContainer<?> hserver : hServers) {
+      if (i != index) restart(hserver);
+      i++;
+    }
+    Thread.sleep(5000);
+    var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    for (var g : gs) {
+      Assertions.assertEquals(CLUSTER_SIZE, g.get().getServerNodesCount());
+    }
+  }
+
+  @Test
+  @Timeout(60)
   void testSingleNodeJoin() throws Exception {
     var options = makeHServerCliOpts(count);
     var newServer = makeHServer(options, seedNodes, dataDir);
