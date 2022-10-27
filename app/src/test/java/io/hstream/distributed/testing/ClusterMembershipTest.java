@@ -128,7 +128,7 @@ public class ClusterMembershipTest {
       if (i != index) restart(hserver);
       i++;
     }
-    Thread.sleep(10000);
+    Thread.sleep(15000);
     var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
     logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var g : gs) {
