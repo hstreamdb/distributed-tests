@@ -50,6 +50,21 @@ public class TestUtils {
         .build();
   }
 
+  public static void restart(GenericContainer<?> container) throws InterruptedException {
+    String tag = container.getContainerId();
+    String snapshotId =
+        container
+            .getDockerClient()
+            .commitCmd(container.getContainerId())
+            .withRepository("temp")
+            .withTag(tag)
+            .exec();
+    container.stop();
+    container.setDockerImageName("temp:" + tag);
+    Thread.sleep(5000);
+    container.start();
+  }
+
   public static GenericContainer<?> makeZooKeeper() {
     return new GenericContainer<>(DockerImageName.parse("zookeeper")).withNetworkMode("host");
   }

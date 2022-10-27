@@ -127,7 +127,7 @@ public class LookupResourceTest {
     leavingNode.close();
     hServers.remove(index);
     stubs.remove(index);
-    Thread.sleep(10000);
+    Thread.sleep(5000);
     var gs = stubs.stream().map(s -> s.lookupSubscription(req)).collect(Collectors.toList());
     logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var g : gs) {
