@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +124,7 @@ public class ClusterMembershipTest {
       if (i != index) restart(hserver);
       i++;
     }
-    Thread.sleep(15000);
+    Thread.sleep(30000);
     var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
     logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var g : gs) {
