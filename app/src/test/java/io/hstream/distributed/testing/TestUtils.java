@@ -60,8 +60,8 @@ public class TestUtils {
             .withTag(tag)
             .exec();
     container.stop();
+    Thread.sleep(10000);
     container.setDockerImageName("temp:" + tag);
-    Thread.sleep(5000);
     container.start();
   }
 

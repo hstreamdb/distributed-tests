@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,16 +76,17 @@ public class ClusterMembershipTest {
     channels.forEach(ManagedChannel::shutdown);
   }
 
-  @Test
-  @Timeout(60)
-  void testClusterBootStrap() throws Exception {
-    var req = Empty.newBuilder().build();
-    var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
-    for (var f : fs) {
-      Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
-    }
-  }
+  //  @Test
+  //  @Timeout(60)
+  //  void testClusterBootStrap() throws Exception {
+  //    var req = Empty.newBuilder().build();
+  //    var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+  //
+  // logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+  //    for (var f : fs) {
+  //      Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
+  //    }
+  //  }
 
   @Test
   @Timeout(60)
@@ -153,6 +150,7 @@ public class ClusterMembershipTest {
     stubs.add(newGrpcStub(options.address, options.port, channels));
     Thread.sleep(1000);
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+
     logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
       Assertions.assertEquals(CLUSTER_SIZE + 1, f.get().getServerNodesCount());
@@ -185,6 +183,7 @@ public class ClusterMembershipTest {
     Thread.sleep(3000);
     var req = Empty.newBuilder().build();
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
+
     logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
       Assertions.assertEquals(CLUSTER_SIZE + newNodesNum, f.get().getServerNodesCount());
