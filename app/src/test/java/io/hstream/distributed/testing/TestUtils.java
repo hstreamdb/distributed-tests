@@ -141,9 +141,12 @@ public class TestUtils {
   static class HServerCliOpts {
     public int serverId;
     public String address;
+    public String host = "127.0.0.1";
     public int port;
     public int internalPort;
     public String zkHost;
+
+    public String extra = "";
 
     public ServerNode toNode() {
       return ServerNode.newBuilder().setId(serverId).setHost(address).setPort(port).build();
@@ -151,7 +154,7 @@ public class TestUtils {
 
     public String toString() {
       return " --bind-address "
-          + "127.0.0.1 "
+          + host
           + " --port "
           + port
           + " --internal-port "
@@ -170,7 +173,8 @@ public class TestUtils {
           + "debug"
           + " --log-with-color"
           + " --store-log-level "
-          + "error";
+          + "error "
+          + extra;
     }
   }
 
@@ -184,6 +188,23 @@ public class TestUtils {
     options.internalPort = socket2.getLocalPort();
     socket2.close();
     options.address = "127.0.0.1";
+    options.zkHost = "127.0.0.1";
+    return options;
+  }
+
+  public static HServerCliOpts makeHServerCliOpts(
+      int serverId, String host, String address, List<String> advertisedListeners)
+      throws IOException {
+    HServerCliOpts options = new HServerCliOpts();
+    options.serverId = serverId;
+    ServerSocket socket = new ServerSocket(0);
+    ServerSocket socket2 = new ServerSocket(0);
+    options.port = socket.getLocalPort();
+    socket.close();
+    options.internalPort = socket2.getLocalPort();
+    socket2.close();
+    options.host = host;
+    options.address = address;
     options.zkHost = "127.0.0.1";
     return options;
   }
@@ -203,12 +224,23 @@ public class TestUtils {
             .execInContainer(
                 "bash",
                 "-c",
-                "hstream --host "
-                    + hserverConfs.get(0).address
-                    + " --port "
-                    + hserverConfs.get(0).port
-                    + " init ");
+                "hstream --host 127.0.0.1" + " --port " + hserverConfs.get(0).port + " init ");
     return hServers;
+  }
+
+  private HStreamApiGrpc.HStreamApiFutureStub getStub(
+      List<String> hServerUrls, ServerNode node, List<HStreamApiGrpc.HStreamApiFutureStub> stubs) {
+    return getStub(hServerUrls, node.getHost() + ":" + node.getPort(), stubs);
+  }
+
+  private HStreamApiGrpc.HStreamApiFutureStub getStub(
+      List<String> hServerUrls, String url, List<HStreamApiGrpc.HStreamApiFutureStub> stubs) {
+    for (int i = 0; i < hServerUrls.size(); i++) {
+      if (hServerUrls.get(i).equals(url)) {
+        return stubs.get(i);
+      }
+    }
+    return null;
   }
 
   // -----------------------------------------------------------------------------------------------

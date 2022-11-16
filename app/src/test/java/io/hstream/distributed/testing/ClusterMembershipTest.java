@@ -51,19 +51,6 @@ public class ClusterMembershipTest {
     this.count = count;
   }
 
-  private HStreamApiGrpc.HStreamApiFutureStub getStub(ServerNode node) {
-    return getStub(node.getHost() + ":" + node.getPort());
-  }
-
-  private HStreamApiGrpc.HStreamApiFutureStub getStub(String url) {
-    for (int i = 0; i < hServerUrls.size(); i++) {
-      if (hServerUrls.get(i).equals(url)) {
-        return stubs.get(i);
-      }
-    }
-    return null;
-  }
-
   @BeforeEach
   public void setup() {
     for (var url : hServerUrls) {
