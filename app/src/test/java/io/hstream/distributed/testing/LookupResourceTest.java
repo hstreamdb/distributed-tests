@@ -5,7 +5,6 @@ import static io.hstream.distributed.testing.TestUtils.*;
 import io.grpc.ManagedChannel;
 import io.hstream.internal.HStreamApiGrpc;
 import io.hstream.internal.LookupSubscriptionRequest;
-import io.hstream.internal.ServerNode;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,19 +51,6 @@ public class LookupResourceTest {
 
   public void setCount(AtomicInteger count) {
     this.count = count;
-  }
-
-  private HStreamApiGrpc.HStreamApiFutureStub getStub(ServerNode node) {
-    return getStub(node.getHost() + ":" + node.getPort());
-  }
-
-  private HStreamApiGrpc.HStreamApiFutureStub getStub(String url) {
-    for (int i = 0; i < hServerUrls.size(); i++) {
-      if (hServerUrls.get(i).equals(url)) {
-        return stubs.get(i);
-      }
-    }
-    return null;
   }
 
   @BeforeEach
