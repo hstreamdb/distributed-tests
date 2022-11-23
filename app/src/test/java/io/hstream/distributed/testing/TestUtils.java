@@ -1,6 +1,7 @@
 package io.hstream.distributed.testing;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.hstream.internal.HStreamApiGrpc;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,6 +138,25 @@ public class TestUtils {
       index++;
     }
     return -1;
+  }
+
+  public static void waitForMemberListSync(int n, List<HStreamApiGrpc.HStreamApiFutureStub> stubs)
+      throws ExecutionException, InterruptedException {
+    for (var stub : stubs) {
+      var retry = 10;
+      while (!(memberListSynced(n, stub, retry))) {
+        Assertions.assertTrue(retry > 0);
+        retry--;
+        Thread.sleep(2000);
+      }
+    }
+  }
+
+  public static boolean memberListSynced(int n, HStreamApiGrpc.HStreamApiFutureStub stub, int retry)
+      throws ExecutionException, InterruptedException {
+    var req = Empty.newBuilder().build();
+    var res = stub.describeCluster(req).get();
+    return res.getServerNodesCount() == n;
   }
 
   static class HServerCliOpts {

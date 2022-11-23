@@ -88,12 +88,7 @@ public class ClusterMembershipTest {
       Assertions.assertEquals(CLUSTER_SIZE, f.get().getServerNodesCount());
     }
     restart(restartingNode);
-    Thread.sleep(1000);
-    var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
-    for (var g : gs) {
-      Assertions.assertEquals(CLUSTER_SIZE, g.get().getServerNodesCount());
-    }
+    waitForMemberListSync(CLUSTER_SIZE, stubs);
   }
 
   @Test
@@ -112,12 +107,7 @@ public class ClusterMembershipTest {
       if (i != index) restart(hserver);
       i++;
     }
-    Thread.sleep(15000);
-    var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
-    for (var g : gs) {
-      Assertions.assertEquals(CLUSTER_SIZE, g.get().getServerNodesCount());
-    }
+    waitForMemberListSync(CLUSTER_SIZE, stubs);
   }
 
   @Test
@@ -135,7 +125,7 @@ public class ClusterMembershipTest {
             .setPort(options.port)
             .build();
     stubs.add(newGrpcStub(options.address, options.port, channels));
-    Thread.sleep(1000);
+    waitForMemberListSync(CLUSTER_SIZE + 1, stubs);
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
 
     logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
@@ -167,7 +157,7 @@ public class ClusterMembershipTest {
       stubs.add(newGrpcStub(url, channels));
     }
 
-    Thread.sleep(3000);
+    waitForMemberListSync(CLUSTER_SIZE + newNodesNum, stubs);
     var req = Empty.newBuilder().build();
     var fs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
 
@@ -198,12 +188,6 @@ public class ClusterMembershipTest {
     leavingNode.close();
     hServers.remove(index);
     stubs.remove(index);
-
-    Thread.sleep(10000);
-    var gs = stubs.stream().map(s -> s.describeCluster(req)).collect(Collectors.toList());
-    for (var g : gs) {
-      Assertions.assertEquals(CLUSTER_SIZE - 1, g.get().getServerNodesCount());
-      //      Assertions.assertFalse(f.get().getServerNodesList().contains(leavingNode));
-    }
+    waitForMemberListSync((CLUSTER_SIZE - 1), stubs);
   }
 }
