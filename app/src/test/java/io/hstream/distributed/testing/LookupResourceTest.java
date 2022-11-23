@@ -1,5 +1,6 @@
 package io.hstream.distributed.testing;
 
+import static io.hstream.distributed.testing.ClusterExtension.CLUSTER_SIZE;
 import static io.hstream.distributed.testing.TestUtils.*;
 
 import io.grpc.ManagedChannel;
@@ -113,7 +114,7 @@ public class LookupResourceTest {
     leavingNode.close();
     hServers.remove(index);
     stubs.remove(index);
-    Thread.sleep(5000);
+    waitForMemberListSync(CLUSTER_SIZE - 1, stubs);
     var gs = stubs.stream().map(s -> s.lookupSubscription(req)).collect(Collectors.toList());
     logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var g : gs) {
@@ -137,11 +138,12 @@ public class LookupResourceTest {
     leavingNode.close();
     hServers.remove(index);
     stubs.remove(index);
-    Thread.sleep(10000);
+    waitForMemberListSync(CLUSTER_SIZE - 1, stubs);
 
     var options = makeHServerCliOpts(count);
     var newServer = makeHServer(options, seedNodes, dataDir);
     newServer.start();
+    waitForMemberListSync(CLUSTER_SIZE, stubs);
     var newStub = newGrpcStub(options.address, options.port, channels);
     stubs.add(newStub);
     var gg = newStub.lookupSubscription(req);
