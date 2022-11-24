@@ -4,6 +4,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.hstream.internal.DescribeClusterResponse;
 import io.hstream.internal.HStreamApiGrpc;
 import io.hstream.internal.ServerNode;
 import java.io.BufferedWriter;
@@ -141,7 +144,7 @@ public class TestUtils {
   }
 
   public static void waitForMemberListSync(int n, List<HStreamApiGrpc.HStreamApiFutureStub> stubs)
-      throws ExecutionException, InterruptedException {
+      throws InterruptedException, ExecutionException {
     for (var stub : stubs) {
       var retry = 10;
       while (!(memberListSynced(n, stub, retry))) {
@@ -153,9 +156,15 @@ public class TestUtils {
   }
 
   public static boolean memberListSynced(int n, HStreamApiGrpc.HStreamApiFutureStub stub, int retry)
-      throws ExecutionException, InterruptedException {
+      throws InterruptedException, ExecutionException {
     var req = Empty.newBuilder().build();
-    var res = stub.describeCluster(req).get();
+    DescribeClusterResponse res = null;
+    try {
+      res = stub.describeCluster(req).get();
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus() == Status.UNAVAILABLE) return false;
+      else throw e;
+    }
     return res.getServerNodesCount() == n;
   }
 
