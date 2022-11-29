@@ -51,7 +51,6 @@ public class ClusterExtension implements BeforeEachCallback, AfterEachCallback {
     hstore.start();
     String hstoreHost = "127.0.0.1";
     logger.debug("hstoreHost: " + hstoreHost);
-
     String hServerAddress = "127.0.0.1";
     List<TestUtils.HServerCliOpts> hserverConfs = new ArrayList<>(CLUSTER_SIZE);
     for (int i = 0; i < CLUSTER_SIZE; ++i) {
