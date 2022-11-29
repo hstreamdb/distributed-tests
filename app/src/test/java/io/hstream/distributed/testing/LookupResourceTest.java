@@ -95,6 +95,7 @@ public class LookupResourceTest {
     var options = makeHServerCliOpts(count);
     var newServer = makeHServer(options, seedNodes, dataDir);
     newServer.start();
+    hServers.add(newServer);
     var g = newGrpcStub(options.address, options.port, channels).lookupSubscription(req);
     Assertions.assertEquals(fs.get(0).get().getServerNode(), g.get().getServerNode());
   }
@@ -143,6 +144,7 @@ public class LookupResourceTest {
     var options = makeHServerCliOpts(count);
     var newServer = makeHServer(options, seedNodes, dataDir);
     newServer.start();
+    hServers.add(newServer);
     waitForMemberListSync(CLUSTER_SIZE, stubs);
     var newStub = newGrpcStub(options.address, options.port, channels);
     stubs.add(newStub);
