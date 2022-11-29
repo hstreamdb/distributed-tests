@@ -46,7 +46,7 @@ public class ClusterAddressTest {
       int hServerPort = 1234 + offset;
       int hServerInnerPort = 65000 + offset;
       TestUtils.HServerCliOpts options = new TestUtils.HServerCliOpts();
-      options.serverId = offset;
+      options.serverId = Integer.toString(offset);
       options.port = hServerPort;
       options.internalPort = hServerInnerPort;
       options.address = adAddr;
@@ -94,7 +94,7 @@ public class ClusterAddressTest {
       int hServerInnerPort = 65000 + offset;
       int publicPort = 2000 + offset;
       TestUtils.HServerCliOpts options = new TestUtils.HServerCliOpts();
-      options.serverId = offset;
+      options.serverId = Integer.toString(offset);
       options.port = hServerPort;
       options.internalPort = hServerInnerPort;
       options.address = adAddr;

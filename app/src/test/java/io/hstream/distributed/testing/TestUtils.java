@@ -160,7 +160,7 @@ public class TestUtils {
   }
 
   static class HServerCliOpts {
-    public int serverId;
+    public String serverId;
     public String address;
     public String host = "127.0.0.1";
     public int port;
@@ -201,7 +201,7 @@ public class TestUtils {
 
   public static HServerCliOpts makeHServerCliOpts(AtomicInteger count) throws IOException {
     HServerCliOpts options = new HServerCliOpts();
-    options.serverId = count.incrementAndGet();
+    options.serverId = Integer.toString(count.incrementAndGet());
     ServerSocket socket = new ServerSocket(0);
     ServerSocket socket2 = new ServerSocket(0);
     options.port = socket.getLocalPort();
@@ -214,7 +214,7 @@ public class TestUtils {
   }
 
   public static HServerCliOpts makeHServerCliOpts(
-      int serverId, String host, String address, List<String> advertisedListeners)
+      String serverId, String host, String address, List<String> advertisedListeners)
       throws IOException {
     HServerCliOpts options = new HServerCliOpts();
     options.serverId = serverId;
