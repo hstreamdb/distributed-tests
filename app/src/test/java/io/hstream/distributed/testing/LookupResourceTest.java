@@ -5,7 +5,10 @@ import static io.hstream.distributed.testing.TestUtils.*;
 
 import io.grpc.ManagedChannel;
 import io.hstream.internal.HStreamApiGrpc;
+import io.hstream.internal.LookupResourceRequest;
 import io.hstream.internal.LookupSubscriptionRequest;
+import io.hstream.internal.ResourceType;
+import io.hstream.internal.ServerNode;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,9 +107,13 @@ public class LookupResourceTest {
   @Timeout(60)
   void LookUpShouldReturnNewResultWithNodeLeaving() throws Exception {
     var subscriptionId = randText();
-    var req = LookupSubscriptionRequest.newBuilder().setSubscriptionId(subscriptionId).build();
-    var f = stubs.get(0).lookupSubscription(req);
-    var allocatedNode = f.get().getServerNode();
+    var req =
+        LookupResourceRequest.newBuilder()
+            .setResType(ResourceType.ResSubscription)
+            .setResId(subscriptionId)
+            .build();
+    var f = stubs.get(0).lookupResource(req);
+    var allocatedNode = f.get();
     var allocatedUrl = allocatedNode.getHost() + ':' + allocatedNode.getPort();
     var index = getHServerIndex(allocatedUrl, hServerUrls);
     Assertions.assertNotEquals(-1, index);
@@ -116,11 +123,11 @@ public class LookupResourceTest {
     hServers.remove(index);
     stubs.remove(index);
     waitForMemberListSync(CLUSTER_SIZE - 1, stubs);
-    var gs = stubs.stream().map(s -> s.lookupSubscription(req)).collect(Collectors.toList());
-    logger.info(gs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
+    var gs = stubs.stream().map(s -> lookupWithRetry(s, req, 3)).collect(Collectors.toList());
+    logger.info(gs.stream().map(ServerNode::toString).collect(Collectors.toList()).toString());
     for (var g : gs) {
-      Assertions.assertNotEquals(allocatedNode, g.get().getServerNode());
-      Assertions.assertEquals(gs.get(0).get().getServerNode(), g.get().getServerNode());
+      Assertions.assertNotEquals(allocatedNode, g);
+      Assertions.assertEquals(gs.get(0), g);
     }
   }
 

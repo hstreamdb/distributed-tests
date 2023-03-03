@@ -8,6 +8,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.hstream.internal.DescribeClusterResponse;
 import io.hstream.internal.HStreamApiGrpc;
+import io.hstream.internal.LookupResourceRequest;
 import io.hstream.internal.ServerNode;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -166,6 +167,26 @@ public class TestUtils {
       else throw e;
     }
     return res.getServerNodesCount() == n;
+  }
+
+  public static ServerNode lookupWithRetry(
+      HStreamApiGrpc.HStreamApiFutureStub stub, LookupResourceRequest req, int retry) {
+    Assertions.assertTrue(retry > 0);
+    retry--;
+    try {
+      return stub.lookupResource(req).get();
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus() == Status.UNAVAILABLE) {
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e1) {
+          throw new RuntimeException(e);
+        }
+        return lookupWithRetry(stub, req, retry);
+      } else throw e;
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   static class HServerCliOpts {
