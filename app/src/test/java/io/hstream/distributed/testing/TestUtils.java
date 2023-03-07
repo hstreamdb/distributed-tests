@@ -174,14 +174,10 @@ public class TestUtils {
     Assertions.assertTrue(retry > 0);
     retry--;
     try {
+      Thread.sleep(2000);
       return stub.lookupResource(req).get();
     } catch (StatusRuntimeException e) {
       if (e.getStatus() == Status.UNAVAILABLE) {
-        try {
-          Thread.sleep(2000);
-        } catch (InterruptedException e1) {
-          throw new RuntimeException(e);
-        }
         return lookupWithRetry(stub, req, retry);
       } else throw e;
     } catch (InterruptedException | ExecutionException e) {
