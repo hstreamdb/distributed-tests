@@ -130,8 +130,18 @@ public class ClusterMembershipTest {
 
     logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
+      var nodes =
+          f.get().getServerNodesList().stream()
+              .map(
+                  (node) ->
+                      ServerNode.newBuilder()
+                          .setId(node.getId())
+                          .setHost(node.getHost())
+                          .setPort(node.getPort())
+                          .build())
+              .collect(Collectors.toList());
       Assertions.assertEquals(CLUSTER_SIZE + 1, f.get().getServerNodesCount());
-      Assertions.assertTrue(f.get().getServerNodesList().contains(newNode));
+      Assertions.assertTrue(nodes.contains(newNode));
     }
 
     newServer.close();
@@ -163,8 +173,18 @@ public class ClusterMembershipTest {
 
     logger.info(fs.stream().map(TestUtils::doGetToString).collect(Collectors.toList()).toString());
     for (var f : fs) {
+      var nodes =
+          f.get().getServerNodesList().stream()
+              .map(
+                  (node) ->
+                      ServerNode.newBuilder()
+                          .setId(node.getId())
+                          .setHost(node.getHost())
+                          .setPort(node.getPort())
+                          .build())
+              .collect(Collectors.toList());
       Assertions.assertEquals(CLUSTER_SIZE + newNodesNum, f.get().getServerNodesCount());
-      Assertions.assertTrue(f.get().getServerNodesList().containsAll(newNodes));
+      Assertions.assertTrue(nodes.containsAll(newNodes));
     }
 
     newServers.stream().parallel().forEach(GenericContainer::close);
